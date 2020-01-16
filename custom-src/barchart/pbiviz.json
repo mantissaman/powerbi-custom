@@ -5,14 +5,14 @@
         "guid": "barchartF7FDFF263E94414EA19C9C130BA566C4",
         "visualClassName": "Visual",
         "version": "1.0.0",
-        "description": "",
-        "supportUrl": "",
+        "description": "Custom Bar Chart",
+        "supportUrl": "http://www.sw-at.com",
         "gitHubUrl": ""
     },
     "apiVersion": "2.6.0",
     "author": {
-        "name": "",
-        "email": ""
+        "name": "Atul Sharma",
+        "email": "asharma@sw-at.com"
     },
     "assets": {
         "icon": "assets/icon.png"

@@ -38,7 +38,7 @@ import DataView = powerbi.DataView;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import * as d3 from "d3";
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-import IColorPalette = powerbi.extensibility.IColorPalette; 
+import IColorPalette = powerbi.extensibility.IColorPalette;
 import IColorInfo = powerbi.IColorInfo;
 import ISelectionId = powerbi.visuals.ISelectionId;
 import ISelectionManager = powerbi.extensibility.ISelectionManager;
@@ -54,19 +54,29 @@ interface BarChartDataPoint {
     color: string;
     selectionID: ISelectionId;
 }
+interface BarChartSettings{
+    enableAxis: {
+        show: boolean;
+    }
+}
 
-function visualTransform(options: VisualUpdateOptions, host: IVisualHost): BarChartViewModel{
+function visualTransform(options: VisualUpdateOptions, host: IVisualHost): BarChartViewModel {
     let dataViews = options.dataViews;
-    
-    let dataInfo: BarChartViewModel ={
+    let defaultSettings: BarChartSettings ={
+        enableAxis: {
+            show: false
+        }
+    };
+
+    let dataInfo: BarChartViewModel = {
         dataPoints: [],
         dataMax: 0
     }
 
-    if(!dataViews 
+    if (!dataViews
         || !dataViews[0]
-        || !dataViews[0].categorical 
-        || !dataViews[0].categorical.categories 
+        || !dataViews[0].categorical
+        || !dataViews[0].categorical.categories
         || !dataViews[0].categorical.categories[0].source
         || !dataViews[0].categorical.values)
         return dataInfo;
@@ -77,13 +87,13 @@ function visualTransform(options: VisualUpdateOptions, host: IVisualHost): BarCh
 
     let dataPoints: BarChartDataPoint[] = [];
     let dataMax: number;
-    
+
     let colorPalette: IColorPalette = host.colorPalette;
 
-    for(let i =0, len = Math.max(category.values.length, dataValue.values.length); i<len; i++){
+    for (let i = 0, len = Math.max(category.values.length, dataValue.values.length); i < len; i++) {
         dataPoints.push({
             category: <string>category.values[i],
-            value: <number> dataValue.values[i],
+            value: <number>dataValue.values[i],
             color: colorPalette.getColor(<string>category.values[i]).value,
             selectionID: host.createSelectionIdBuilder().withCategory(category, i).createSelectionId()
         })
@@ -100,9 +110,10 @@ export class Visual implements IVisual {
     private svg: d3.Selection<SVGAElement>;
     private barContainer: d3.Selection<SVGAElement>;
     private settings: VisualSettings;
-    private host:IVisualHost;
+    private host: IVisualHost;
     private selectionManager: ISelectionManager;
-    
+    private xAxis: d3.Selection<SVGAElement>;
+
 
 
     constructor(options: VisualConstructorOptions) {
@@ -111,20 +122,34 @@ export class Visual implements IVisual {
             .append('svg')
             .classed('barchart', true);
         this.barContainer = this.svg.append('g').classed('barContainer', true);
+
+        this.xAxis = this.svg.append('g')
+            .classed('xAxis', true);
+
         this.host = options.host;
         this.selectionManager = options.host.createSelectionManager();
     }
 
     public update(options: VisualUpdateOptions) {
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
+      
         let transformedData = visualTransform(options, this.host)
         let width = options.viewport.width;
         let height = options.viewport.height;
-        
+
 
         this.svg.attr({
             width: width,
             height: height
+        });
+
+        if(this.settings.dataPoint.showAxis){
+            height = height - 25;
+        }
+        
+
+        this.xAxis.style({
+            'font-size': d3.min([height, width]) * 0.04
         });
 
         let yScale = d3.scale.linear()
@@ -134,6 +159,14 @@ export class Visual implements IVisual {
         let xScale = d3.scale.ordinal()
             .domain(transformedData.dataPoints.map(d => d.category))
             .rangeRoundBands([0, width], 0.1, 0.2);
+
+
+        let xAxis = d3.svg.axis()
+            .scale(xScale)
+            .orient('bottom');
+
+        this.xAxis.attr({ 'transform': 'translate(0, ' + height + ')' })
+            .call(xAxis);
 
         let bars = this.barContainer
             .selectAll('.bar')
@@ -152,16 +185,16 @@ export class Visual implements IVisual {
         });
 
         let selectionManager = this.selectionManager;
-        bars.on('click', function(dataPoint){
+        bars.on('click', function (dataPoint) {
             selectionManager.select(dataPoint.selectionID)
-            .then((ids: ISelectionId[]) => {
-                bars.attr({
-                    'fill-opacity': ids.length >0 ? 0.5 : 1
-                })
-                d3.select(this).attr({
-                    'fill-opacity': 1
-                })
-            });
+                .then((ids: ISelectionId[]) => {
+                    bars.attr({
+                        'fill-opacity': ids.length > 0 ? 0.5 : 1
+                    })
+                    d3.select(this).attr({
+                        'fill-opacity': 1
+                    })
+                });
         });
 
         bars.exit().remove();

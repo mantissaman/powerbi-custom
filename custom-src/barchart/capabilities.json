@@ -12,6 +12,7 @@
         }
     ],
     "objects": {
+
         "dataPoint": {
             "displayName": "Data colors",
             "properties": {
@@ -53,6 +54,12 @@
                         "formatting": {
                             "fontSize": true
                         }
+                    }
+                },
+                "showAxis":{
+                    "displayName" : "Enable Axis",
+                    "type":{
+                        "bool": true
                     }
                 }
             }
